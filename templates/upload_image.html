@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Image - Seinfeld Scene Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .spinner-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        .spinner {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #3498db;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #uploadedImage {
+            max-width: 100%;
+            margin-bottom: 20px;
+            display: none;
+        }
+        #errorMessage {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
+        #seinfeldScene {
+            white-space: pre-wrap;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image - Seinfeld Scene Generator</h1>
+    <form id="uploadForm">
+        <input type="file" name="image" id="imageInput" accept="image/*">
+        <input type="submit" value="Upload and Generate Scene">
+    </form>
+    
+    <div id="errorMessage"></div>
+    
+    <div id="spinner-container" class="spinner-container">
+        <div class="spinner"></div>
+    </div>
+    
+    <div id="result" style="display:none;">
+        <img id="uploadedImage" alt="Uploaded Image">
+        <h2>Generated Seinfeld Scene:</h2>
+        <p><strong>Filename:</strong> <span id="filename"></span></p>
+        <p><strong>Format:</strong> <span id="format"></span></p>
+        <p><strong>Size:</strong> <span id="size"></span></p>
+        <p><strong>Seinfeld Scene:</strong></p>
+        <pre id="seinfeldScene"></pre>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            uploadImage();
+        });
+
+        function uploadImage() {
+            const spinnerContainer = document.getElementById('spinner-container');
+            const result = document.getElementById('result');
+            const imageInput = document.getElementById('imageInput');
+            const uploadedImage = document.getElementById('uploadedImage');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (!imageInput.files.length) {
+                alert('Please select an image to upload.');
+                return;
+            }
+            
+            spinnerContainer.style.display = 'flex';
+            result.style.display = 'none';
+            uploadedImage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            const formData = new FormData();
+            formData.append('image', imageInput.files[0]);
+            
+            fetch('/upload_image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with an error');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data);  // Debug log
+                document.getElementById('filename').textContent = data.filename;
+                document.getElementById('format').textContent = data.format;
+                document.getElementById('size').textContent = data.size;
+                document.getElementById('seinfeldScene').textContent = data.seinfeld_scene;
+                
+                // Display the uploaded image
+                uploadedImage.src = data.image_url;
+                uploadedImage.style.display = 'block';
+                
+                spinnerContainer.style.display = 'none';
+                result.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                spinnerContainer.style.display = 'none';
+                errorMessage.textContent = 'An error occurred while uploading the image. Please try again.';
+                errorMessage.style.display = 'block';
+            });
+        }
+    </script>
+</body>
+</html>
