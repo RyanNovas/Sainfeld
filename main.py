@@ -8,6 +8,7 @@ from io import BytesIO
 from PIL import Image
 import google.generativeai as genai
 from config import GEMINI_API_KEY
+from pydantic import BaseModel
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -20,6 +21,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Configure the Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-pro')
+
+class SceneDevelopment(BaseModel):
+    current_scene: str
+    user_input: str
 
 @app.get("/", response_class=HTMLResponse)
 async def upload_form(request: Request):
@@ -61,4 +66,28 @@ async def upload_image(image: UploadFile = File(...)):
         })
     except Exception as e:
         logger.error(f"Error processing image: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/develop_scene")
+async def develop_scene(scene_development: SceneDevelopment):
+    try:
+        prompt = f"""
+        Given the following Seinfeld scene:
+
+        {scene_development.current_scene}
+
+        Continue the scene based on this user input: "{scene_development.user_input}"
+        Maintain the style and tone of Seinfeld, and keep the continuation under 100 words.
+        """
+        response = model.generate_content(prompt)
+        developed_scene = response.text
+        
+        logger.info(f"Scene developed successfully")
+        logger.info(f"Developed scene: {developed_scene}")
+        
+        return JSONResponse({
+            "developed_scene": developed_scene
+        })
+    except Exception as e:
+        logger.error(f"Error developing scene: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
