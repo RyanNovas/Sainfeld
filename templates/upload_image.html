@@ -34,10 +34,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        #uploadedImage {
+        .uploadedImage {
             max-width: 100%;
             margin-bottom: 20px;
-            display: none;
+            display: block;
         }
         #errorMessage {
             color: red;
@@ -96,7 +96,7 @@
     </div>
     
     <div id="result" style="display:none;">
-        <img id="uploadedImage" alt="Uploaded Image">
+        <div id="imageContainer"></div>
         <h2>Generated Seinfeld Scene:</h2>
         <p><strong>Filename:</strong> <span id="filename"></span></p>
         <p><strong>Format:</strong> <span id="format"></span></p>
@@ -111,12 +111,14 @@
         <div id="developmentContainer" style="display:none;">
             <h3>Develop the Scene:</h3>
             <textarea id="userInput" placeholder="Enter your ideas to continue the scene..."></textarea>
+            <input type="file" id="additionalImages" multiple accept="image/*">
             <button id="developButton">Develop Scene</button>
         </div>
         
         <div id="furtherDevelopmentContainer" style="display:none;">
             <h3>Further Develop the Scene:</h3>
             <textarea id="furtherDevelopmentInput" placeholder="Enter your ideas for further development..."></textarea>
+            <input type="file" id="furtherAdditionalImages" multiple accept="image/*">
             <button id="furtherDevelopButton">Further Develop</button>
         </div>
     </div>
@@ -149,7 +151,7 @@
             const spinnerContainer = document.getElementById('spinner-container');
             const result = document.getElementById('result');
             const imageInput = document.getElementById('imageInput');
-            const uploadedImage = document.getElementById('uploadedImage');
+            const imageContainer = document.getElementById('imageContainer');
             const errorMessage = document.getElementById('errorMessage');
             
             if (!imageInput.files.length) {
@@ -159,7 +161,7 @@
             
             spinnerContainer.style.display = 'flex';
             result.style.display = 'none';
-            uploadedImage.style.display = 'none';
+            imageContainer.innerHTML = '';
             errorMessage.style.display = 'none';
             
             const formData = new FormData();
@@ -185,8 +187,11 @@
                 updateSceneHistory();
                 
                 // Display the uploaded image
-                uploadedImage.src = data.image_url;
-                uploadedImage.style.display = 'block';
+                const img = document.createElement('img');
+                img.src = data.image_url;
+                img.alt = "Uploaded Image";
+                img.className = "uploadedImage";
+                imageContainer.appendChild(img);
                 
                 spinnerContainer.style.display = 'none';
                 result.style.display = 'block';
@@ -205,6 +210,7 @@
         function developScene() {
             const spinnerContainer = document.getElementById('spinner-container');
             const userInput = document.getElementById('userInput').value;
+            const additionalImages = document.getElementById('additionalImages').files;
             
             if (!userInput.trim()) {
                 alert('Please enter some ideas to develop the scene.');
@@ -213,15 +219,16 @@
             
             spinnerContainer.style.display = 'flex';
             
+            const formData = new FormData();
+            formData.append('scene_history', JSON.stringify(sceneHistory));
+            formData.append('user_input', userInput);
+            for (let i = 0; i < additionalImages.length; i++) {
+                formData.append('images', additionalImages[i]);
+            }
+            
             fetch('/develop_scene', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    scene_history: sceneHistory,
-                    user_input: userInput
-                })
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -235,9 +242,20 @@
                 sceneHistory.push(data.developed_scene);
                 updateSceneHistory();
                 document.getElementById('userInput').value = '';
+                document.getElementById('additionalImages').value = '';
                 spinnerContainer.style.display = 'none';
                 document.getElementById('acceptRejectButtons').style.display = 'block';
                 document.getElementById('developmentContainer').style.display = 'none';
+                
+                // Display new images
+                const imageContainer = document.getElementById('imageContainer');
+                data.new_image_urls.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = "Additional Image";
+                    img.className = "uploadedImage";
+                    imageContainer.appendChild(img);
+                });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -261,6 +279,7 @@
         function furtherDevelopScene() {
             const spinnerContainer = document.getElementById('spinner-container');
             const userInput = document.getElementById('furtherDevelopmentInput').value;
+            const additionalImages = document.getElementById('furtherAdditionalImages').files;
             
             if (!userInput.trim()) {
                 alert('Please enter some ideas for further development.');
@@ -269,15 +288,16 @@
             
             spinnerContainer.style.display = 'flex';
             
+            const formData = new FormData();
+            formData.append('scene_history', JSON.stringify(sceneHistory));
+            formData.append('user_input', userInput);
+            for (let i = 0; i < additionalImages.length; i++) {
+                formData.append('images', additionalImages[i]);
+            }
+            
             fetch('/develop_scene', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    scene_history: sceneHistory,
-                    user_input: userInput
-                })
+                body: formData
             })
             .then(response => {
                 if (!response.ok) {
@@ -291,9 +311,20 @@
                 sceneHistory.push(data.developed_scene);
                 updateSceneHistory();
                 document.getElementById('furtherDevelopmentInput').value = '';
+                document.getElementById('furtherAdditionalImages').value = '';
                 spinnerContainer.style.display = 'none';
                 document.getElementById('acceptRejectButtons').style.display = 'block';
                 document.getElementById('furtherDevelopmentContainer').style.display = 'none';
+                
+                // Display new images
+                const imageContainer = document.getElementById('imageContainer');
+                data.new_image_urls.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = "Additional Image";
+                    img.className = "uploadedImage";
+                    imageContainer.appendChild(img);
+                });
             })
             .catch(error => {
                 console.error('Error:', error);

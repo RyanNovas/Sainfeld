@@ -1,0 +1,66 @@
+function developScene() {
+    const spinnerContainer = document.getElementById('spinner-container');
+    const userInput = document.getElementById('userInput').value;
+    const additionalImages = document.getElementById('additionalImages').files;
+    
+    if (!userInput.trim()) {
+        alert('Please enter some ideas to develop the scene.');
+        return;
+    }
+    
+    spinnerContainer.style.display = 'flex';
+    
+    const formData = new FormData();
+    formData.append('scene_history', sceneHistory.join('|||'));
+    formData.append('user_input', userInput);
+    for (let i = 0; i < additionalImages.length; i++) {
+        formData.append('images', additionalImages[i]);
+    }
+    
+    console.log('Sending data:', {
+        scene_history: sceneHistory.join('|||'),
+        user_input: userInput,
+        images: additionalImages.length + ' files'
+    });
+
+    fetch('/develop_scene', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Server responded with ${response.status}: ${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Received developed scene:', data);
+        sceneHistory.push(`User Input: ${userInput}`);
+        sceneHistory.push(data.developed_scene);
+        updateSceneHistory();
+        document.getElementById('userInput').value = '';
+        document.getElementById('additionalImages').value = '';
+        spinnerContainer.style.display = 'none';
+        document.getElementById('acceptRejectButtons').style.display = 'block';
+        document.getElementById('developmentContainer').style.display = 'none';
+        
+        // Display new images
+        const imageContainer = document.getElementById('imageContainer');
+        data.new_image_urls.forEach(url => {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = "Additional Image";
+            img.className = "uploadedImage";
+            imageContainer.appendChild(img);
+        });
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        spinnerContainer.style.display = 'none';
+        alert('An error occurred while developing the scene. Please try again. Error: ' + error.message);
+    });
+}
+
+// Update furtherDevelopScene() similarly

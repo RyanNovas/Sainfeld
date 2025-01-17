@@ -1,6 +1,6 @@
 import os
 import logging
-from fastapi import FastAPI, File, UploadFile, Request, HTTPException
+from fastapi import FastAPI, File, UploadFile, Request, HTTPException, Form
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
@@ -8,7 +8,8 @@ from io import BytesIO
 from PIL import Image
 import google.generativeai as genai
 from config import GEMINI_API_KEY
-from pydantic import BaseModel
+import json
+from typing import List
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -21,10 +22,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Configure the Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-pro')
-
-class SceneDevelopment(BaseModel):
-    scene_history: list
-    user_input: str
 
 @app.get("/", response_class=HTMLResponse)
 async def upload_form(request: Request):
@@ -69,27 +66,59 @@ async def upload_image(image: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/develop_scene")
-async def develop_scene(scene_development: SceneDevelopment):
+async def develop_scene(
+    scene_history: str = Form(...),
+    user_input: str = Form(...),
+    images: List[UploadFile] = File(None)
+):
     try:
-        scene_history = scene_development.scene_history
-        user_input = scene_development.user_input
+        scene_history = json.loads(scene_history)
         
+        # Process and save additional images
+        new_image_urls = []
+        image_contents = []
+        if images:
+            for image in images:
+                image_bytes = await image.read()
+                pil_image = Image.open(BytesIO(image_bytes))
+                
+                # Save the image to the static directory
+                image_path = os.path.join("static", image.filename)
+                pil_image.save(image_path)
+                os.chmod(image_path, 0o644)
+                
+                new_image_urls.append(f"/static/{image.filename}")
+                image_contents.append(pil_image)
+
+        # Prepare the prompt for scene development
         prompt = f"""
         Given the following Seinfeld scene development history:
 
         {' '.join(scene_history)}
 
         Continue the scene based on this user input: "{user_input}"
-        Maintain the style and tone of Seinfeld, and keep the continuation under 100 words.
         """
-        response = model.generate_content(prompt)
+        
+        if images:
+            prompt += f"\nIncorporate elements from the {len(images)} new image(s) provided into the scene."
+            prompt += "\nMaintain the style and tone of Seinfeld, and keep the continuation under 150 words."
+        else:
+            prompt += "\nMaintain the style and tone of Seinfeld, and keep the continuation under 100 words."
+
+        # Generate the developed scene
+        if image_contents:
+            response = model.generate_content([prompt] + image_contents)
+        else:
+            response = model.generate_content(prompt)
+        
         developed_scene = response.text
         
         logger.info(f"Scene developed successfully")
         logger.info(f"Developed scene: {developed_scene}")
         
         return JSONResponse({
-            "developed_scene": developed_scene
+            "developed_scene": developed_scene,
+            "new_image_urls": new_image_urls
         })
     except Exception as e:
         logger.error(f"Error developing scene: {str(e)}")
