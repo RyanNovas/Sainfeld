@@ -3,3 +3,5 @@ Pillow
 python-multipart
 google-generativeai
 python-dotenv
+Jinja2==3.1.5
+uvicorn==0.34.0
