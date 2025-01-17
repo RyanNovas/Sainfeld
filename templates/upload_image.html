@@ -44,27 +44,41 @@
             margin-top: 10px;
             display: none;
         }
-        #seinfeldScene, #developedScene {
+        .scene {
             white-space: pre-wrap;
             background-color: #f0f0f0;
             padding: 10px;
             border-radius: 5px;
             margin-bottom: 20px;
         }
-        #userInput {
+        .userInput {
+            font-style: italic;
+            margin-bottom: 10px;
+        }
+        #userInput, #furtherDevelopmentInput {
             width: 100%;
             padding: 10px;
             margin-bottom: 10px;
         }
-        #developButton {
+        button {
             padding: 10px 20px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        #acceptButton {
             background-color: #4CAF50;
             color: white;
             border: none;
-            cursor: pointer;
         }
-        #developButton:hover {
-            background-color: #45a049;
+        #rejectButton {
+            background-color: #f44336;
+            color: white;
+            border: none;
+        }
+        #developButton, #furtherDevelopButton {
+            background-color: #008CBA;
+            color: white;
+            border: none;
         }
     </style>
 </head>
@@ -87,20 +101,29 @@
         <p><strong>Filename:</strong> <span id="filename"></span></p>
         <p><strong>Format:</strong> <span id="format"></span></p>
         <p><strong>Size:</strong> <span id="size"></span></p>
-        <p><strong>Original Seinfeld Scene:</strong></p>
-        <pre id="seinfeldScene"></pre>
+        <div id="sceneHistory"></div>
         
-        <h3>Develop the Scene:</h3>
-        <textarea id="userInput" placeholder="Enter your ideas to continue the scene..."></textarea>
-        <button id="developButton">Develop Scene</button>
+        <div id="acceptRejectButtons" style="display:none;">
+            <button id="acceptButton">Accept</button>
+            <button id="rejectButton">Reject</button>
+        </div>
         
-        <div id="developedSceneContainer" style="display:none;">
-            <h3>Developed Scene:</h3>
-            <pre id="developedScene"></pre>
+        <div id="developmentContainer" style="display:none;">
+            <h3>Develop the Scene:</h3>
+            <textarea id="userInput" placeholder="Enter your ideas to continue the scene..."></textarea>
+            <button id="developButton">Develop Scene</button>
+        </div>
+        
+        <div id="furtherDevelopmentContainer" style="display:none;">
+            <h3>Further Develop the Scene:</h3>
+            <textarea id="furtherDevelopmentInput" placeholder="Enter your ideas for further development..."></textarea>
+            <button id="furtherDevelopButton">Further Develop</button>
         </div>
     </div>
 
     <script>
+        let sceneHistory = [];
+
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
             uploadImage();
@@ -108,6 +131,18 @@
 
         document.getElementById('developButton').addEventListener('click', function() {
             developScene();
+        });
+
+        document.getElementById('acceptButton').addEventListener('click', function() {
+            acceptScene();
+        });
+
+        document.getElementById('rejectButton').addEventListener('click', function() {
+            rejectScene();
+        });
+
+        document.getElementById('furtherDevelopButton').addEventListener('click', function() {
+            furtherDevelopScene();
         });
 
         function uploadImage() {
@@ -145,7 +180,9 @@
                 document.getElementById('filename').textContent = data.filename;
                 document.getElementById('format').textContent = data.format;
                 document.getElementById('size').textContent = data.size;
-                document.getElementById('seinfeldScene').textContent = data.seinfeld_scene;
+                
+                sceneHistory = [data.seinfeld_scene];
+                updateSceneHistory();
                 
                 // Display the uploaded image
                 uploadedImage.src = data.image_url;
@@ -153,6 +190,9 @@
                 
                 spinnerContainer.style.display = 'none';
                 result.style.display = 'block';
+                document.getElementById('acceptRejectButtons').style.display = 'block';
+                document.getElementById('developmentContainer').style.display = 'none';
+                document.getElementById('furtherDevelopmentContainer').style.display = 'none';
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -165,9 +205,6 @@
         function developScene() {
             const spinnerContainer = document.getElementById('spinner-container');
             const userInput = document.getElementById('userInput').value;
-            const currentScene = document.getElementById('seinfeldScene').textContent;
-            const developedSceneContainer = document.getElementById('developedSceneContainer');
-            const developedScene = document.getElementById('developedScene');
             
             if (!userInput.trim()) {
                 alert('Please enter some ideas to develop the scene.');
@@ -182,7 +219,7 @@
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    current_scene: currentScene,
+                    scene_history: sceneHistory,
                     user_input: userInput
                 })
             })
@@ -194,14 +231,85 @@
             })
             .then(data => {
                 console.log('Received developed scene:', data);  // Debug log
-                developedScene.textContent = data.developed_scene;
-                developedSceneContainer.style.display = 'block';
+                sceneHistory.push(`User Input: ${userInput}`);
+                sceneHistory.push(data.developed_scene);
+                updateSceneHistory();
+                document.getElementById('userInput').value = '';
                 spinnerContainer.style.display = 'none';
+                document.getElementById('acceptRejectButtons').style.display = 'block';
+                document.getElementById('developmentContainer').style.display = 'none';
             })
             .catch(error => {
                 console.error('Error:', error);
                 spinnerContainer.style.display = 'none';
                 alert('An error occurred while developing the scene. Please try again.');
+            });
+        }
+
+        function acceptScene() {
+            document.getElementById('acceptRejectButtons').style.display = 'none';
+            document.getElementById('furtherDevelopmentContainer').style.display = 'block';
+        }
+
+        function rejectScene() {
+            sceneHistory.pop();  // Remove the last generated scene
+            updateSceneHistory();
+            document.getElementById('acceptRejectButtons').style.display = 'none';
+            document.getElementById('developmentContainer').style.display = 'block';
+        }
+
+        function furtherDevelopScene() {
+            const spinnerContainer = document.getElementById('spinner-container');
+            const userInput = document.getElementById('furtherDevelopmentInput').value;
+            
+            if (!userInput.trim()) {
+                alert('Please enter some ideas for further development.');
+                return;
+            }
+            
+            spinnerContainer.style.display = 'flex';
+            
+            fetch('/develop_scene', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    scene_history: sceneHistory,
+                    user_input: userInput
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Server responded with an error');
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received further developed scene:', data);  // Debug log
+                sceneHistory.push(`User Input: ${userInput}`);
+                sceneHistory.push(data.developed_scene);
+                updateSceneHistory();
+                document.getElementById('furtherDevelopmentInput').value = '';
+                spinnerContainer.style.display = 'none';
+                document.getElementById('acceptRejectButtons').style.display = 'block';
+                document.getElementById('furtherDevelopmentContainer').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                spinnerContainer.style.display = 'none';
+                alert('An error occurred while further developing the scene. Please try again.');
+            });
+        }
+
+        function updateSceneHistory() {
+            const sceneHistoryContainer = document.getElementById('sceneHistory');
+            sceneHistoryContainer.innerHTML = '';
+            sceneHistory.forEach((scene, index) => {
+                const sceneElement = document.createElement('div');
+                sceneElement.className = index % 2 === 0 ? 'scene' : 'userInput';
+                sceneElement.textContent = scene;
+                sceneHistoryContainer.appendChild(sceneElement);
             });
         }
     </script>

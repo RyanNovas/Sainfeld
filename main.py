@@ -23,7 +23,7 @@ genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-pro')
 
 class SceneDevelopment(BaseModel):
-    current_scene: str
+    scene_history: list
     user_input: str
 
 @app.get("/", response_class=HTMLResponse)
@@ -71,12 +71,15 @@ async def upload_image(image: UploadFile = File(...)):
 @app.post("/develop_scene")
 async def develop_scene(scene_development: SceneDevelopment):
     try:
+        scene_history = scene_development.scene_history
+        user_input = scene_development.user_input
+        
         prompt = f"""
-        Given the following Seinfeld scene:
+        Given the following Seinfeld scene development history:
 
-        {scene_development.current_scene}
+        {' '.join(scene_history)}
 
-        Continue the scene based on this user input: "{scene_development.user_input}"
+        Continue the scene based on this user input: "{user_input}"
         Maintain the style and tone of Seinfeld, and keep the continuation under 100 words.
         """
         response = model.generate_content(prompt)
