@@ -80,6 +80,17 @@
             color: white;
             border: none;
         }
+        .additionalImages {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .additionalImages img {
+            max-width: 200px;
+            max-height: 200px;
+            object-fit: cover;
+        }
     </style>
 </head>
 <body>
@@ -183,15 +194,12 @@
                 document.getElementById('format').textContent = data.format;
                 document.getElementById('size').textContent = data.size;
                 
-                sceneHistory = [data.seinfeld_scene];
+                sceneHistory = [{
+                    type: 'scene',
+                    content: data.seinfeld_scene,
+                    images: [data.image_url]
+                }];
                 updateSceneHistory();
-                
-                // Display the uploaded image
-                const img = document.createElement('img');
-                img.src = data.image_url;
-                img.alt = "Uploaded Image";
-                img.className = "uploadedImage";
-                imageContainer.appendChild(img);
                 
                 spinnerContainer.style.display = 'none';
                 result.style.display = 'block';
@@ -238,24 +246,22 @@
             })
             .then(data => {
                 console.log('Received developed scene:', data);  // Debug log
-                sceneHistory.push(`User Input: ${userInput}`);
-                sceneHistory.push(data.developed_scene);
+                sceneHistory.push({
+                    type: 'userInput',
+                    content: userInput,
+                    images: data.new_image_urls
+                });
+                sceneHistory.push({
+                    type: 'scene',
+                    content: data.developed_scene,
+                    images: []
+                });
                 updateSceneHistory();
                 document.getElementById('userInput').value = '';
                 document.getElementById('additionalImages').value = '';
                 spinnerContainer.style.display = 'none';
                 document.getElementById('acceptRejectButtons').style.display = 'block';
                 document.getElementById('developmentContainer').style.display = 'none';
-                
-                // Display new images
-                const imageContainer = document.getElementById('imageContainer');
-                data.new_image_urls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = "Additional Image";
-                    img.className = "uploadedImage";
-                    imageContainer.appendChild(img);
-                });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -271,6 +277,7 @@
 
         function rejectScene() {
             sceneHistory.pop();  // Remove the last generated scene
+            sceneHistory.pop();  // Remove the last user input
             updateSceneHistory();
             document.getElementById('acceptRejectButtons').style.display = 'none';
             document.getElementById('developmentContainer').style.display = 'block';
@@ -307,24 +314,22 @@
             })
             .then(data => {
                 console.log('Received further developed scene:', data);  // Debug log
-                sceneHistory.push(`User Input: ${userInput}`);
-                sceneHistory.push(data.developed_scene);
+                sceneHistory.push({
+                    type: 'userInput',
+                    content: userInput,
+                    images: data.new_image_urls
+                });
+                sceneHistory.push({
+                    type: 'scene',
+                    content: data.developed_scene,
+                    images: []
+                });
                 updateSceneHistory();
                 document.getElementById('furtherDevelopmentInput').value = '';
                 document.getElementById('furtherAdditionalImages').value = '';
                 spinnerContainer.style.display = 'none';
                 document.getElementById('acceptRejectButtons').style.display = 'block';
                 document.getElementById('furtherDevelopmentContainer').style.display = 'none';
-                
-                // Display new images
-                const imageContainer = document.getElementById('imageContainer');
-                data.new_image_urls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = "Additional Image";
-                    img.className = "uploadedImage";
-                    imageContainer.appendChild(img);
-                });
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -336,10 +341,22 @@
         function updateSceneHistory() {
             const sceneHistoryContainer = document.getElementById('sceneHistory');
             sceneHistoryContainer.innerHTML = '';
-            sceneHistory.forEach((scene, index) => {
+            sceneHistory.forEach((item, index) => {
+                if (item.images && item.images.length > 0) {
+                    const imageContainer = document.createElement('div');
+                    imageContainer.className = 'additionalImages';
+                    item.images.forEach(imageUrl => {
+                        const img = document.createElement('img');
+                        img.src = imageUrl;
+                        img.alt = "Additional Image";
+                        imageContainer.appendChild(img);
+                    });
+                    sceneHistoryContainer.appendChild(imageContainer);
+                }
+                
                 const sceneElement = document.createElement('div');
-                sceneElement.className = index % 2 === 0 ? 'scene' : 'userInput';
-                sceneElement.textContent = scene;
+                sceneElement.className = item.type === 'scene' ? 'scene' : 'userInput';
+                sceneElement.textContent = item.content;
                 sceneHistoryContainer.appendChild(sceneElement);
             });
         }

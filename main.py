@@ -91,10 +91,11 @@ async def develop_scene(
                 image_contents.append(pil_image)
 
         # Prepare the prompt for scene development
+        scene_text = "\n".join([item['content'] for item in scene_history if item['type'] == 'scene'])
         prompt = f"""
         Given the following Seinfeld scene development history:
 
-        {' '.join(scene_history)}
+        {scene_text}
 
         Continue the scene based on this user input: "{user_input}"
         """
