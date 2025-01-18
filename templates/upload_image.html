@@ -1,50 +1,130 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Upload Image - Seinfeld Scene Generator</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seinfeld Scene Generator</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
     <link rel="stylesheet" href="/static/css/styles.css">
 </head>
 <body>
-    <h1>Upload Image - Seinfeld Scene Generator</h1>
-    <form id="uploadForm">
-        <input type="file" name="image" id="imageInput" accept="image/*">
-        <input type="submit" value="Upload and Generate Scene">
-    </form>
-    
-    <div id="errorMessage"></div>
-    
-    <div id="spinner-container" class="spinner-container">
-        <div class="spinner"></div>
-    </div>
-    
-    <div id="result" style="display:none;">
-        <div id="imageContainer"></div>
-        <h2>Generated Seinfeld Scene:</h2>
-        <p><strong>Filename:</strong> <span id="filename"></span></p>
-        <p><strong>Format:</strong> <span id="format"></span></p>
-        <p><strong>Size:</strong> <span id="size"></span></p>
-        <div id="sceneHistory"></div>
-        
-        <div id="acceptRejectButtons" style="display:none;">
-            <button id="acceptButton">Accept</button>
-            <button id="rejectButton">Reject</button>
+    <nav class="blue darken-2">
+        <div class="nav-wrapper container">
+            <a href="#" class="brand-logo">Seinfeld Scene Generator</a>
         </div>
-        
-        <div id="developmentContainer" style="display:none;">
-            <h3>Develop the Scene:</h3>
-            <textarea id="userInput" placeholder="Enter your ideas to continue the scene..."></textarea>
-            <input type="file" id="additionalImages" multiple accept="image/*">
-            <button id="developButton">Develop Scene</button>
+    </nav>
+
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Upload Image</span>
+                        <form id="uploadForm">
+                            <div class="file-field input-field">
+                                <div class="btn blue">
+                                    <span>File</span>
+                                    <input type="file" name="image" id="imageInput" accept="image/*">
+                                </div>
+                                <div class="file-path-wrapper">
+                                    <input class="file-path validate" type="text" placeholder="Upload an image">
+                                </div>
+                            </div>
+                            <button class="btn waves-effect waves-light blue" type="submit">
+                                Upload and Generate Scene
+                                <i class="material-icons right">send</i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div id="furtherDevelopmentContainer" style="display:none;">
-            <h3>Further Develop the Scene:</h3>
-            <textarea id="furtherDevelopmentInput" placeholder="Enter your ideas for further development..."></textarea>
-            <input type="file" id="furtherAdditionalImages" multiple accept="image/*">
-            <button id="furtherDevelopButton">Further Develop</button>
+
+        <div id="errorMessage" class="red-text"></div>
+
+        <div id="spinner-container" class="spinner-container">
+            <div class="preloader-wrapper big active">
+                <div class="spinner-layer spinner-blue-only">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="result" style="display:none;">
+            <div id="imageContainer" class="row"></div>
+            <div class="card">
+                <div class="card-content">
+                    <span class="card-title">Generated Seinfeld Scene</span>
+                    <p><strong>Filename:</strong> <span id="filename"></span></p>
+                    <p><strong>Format:</strong> <span id="format"></span></p>
+                    <p><strong>Size:</strong> <span id="size"></span></p>
+                    <div id="sceneHistory" class="script-format"></div>
+                </div>
+                <div class="card-action" id="acceptRejectButtons" style="display:none;">
+                    <a href="#" id="acceptButton" class="btn-flat blue-text">Accept</a>
+                    <a href="#" id="rejectButton" class="btn-flat red-text">Reject</a>
+                </div>
+            </div>
+
+            <div id="developmentContainer" class="card" style="display:none;">
+                <div class="card-content">
+                    <span class="card-title">Develop the Scene</span>
+                    <div class="input-field">
+                        <textarea id="userInput" class="materialize-textarea"></textarea>
+                        <label for="userInput">Enter your ideas to continue the scene...</label>
+                    </div>
+                    <div class="file-field input-field">
+                        <div class="btn blue">
+                            <span>Images</span>
+                            <input type="file" id="additionalImages" multiple accept="image/*">
+                        </div>
+                        <div class="file-path-wrapper">
+                            <input class="file-path validate" type="text" placeholder="Upload additional images">
+                        </div>
+                    </div>
+                    <button id="developButton" class="btn waves-effect waves-light blue">
+                        Develop Scene
+                        <i class="material-icons right">create</i>
+                    </button>
+                </div>
+            </div>
+
+            <div id="furtherDevelopmentContainer" class="card" style="display:none;">
+                <div class="card-content">
+                    <span class="card-title">Further Develop the Scene</span>
+                    <div class="input-field">
+                        <textarea id="furtherDevelopmentInput" class="materialize-textarea"></textarea>
+                        <label for="furtherDevelopmentInput">Enter your ideas for further development...</label>
+                    </div>
+                    <div class="file-field input-field">
+                        <div class="btn blue">
+                            <span>Images</span>
+                            <input type="file" id="furtherAdditionalImages" multiple accept="image/*">
+                        </div>
+                        <div class="file-path-wrapper">
+                            <input class="file-path validate" type="text" placeholder="Upload additional images">
+                        </div>
+                    </div>
+                    <button id="furtherDevelopButton" class="btn waves-effect waves-light blue">
+                        Further Develop
+                        <i class="material-icons right">create</i>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script src="/static/js/script.js"></script>
 </body>
 </html>

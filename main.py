@@ -10,6 +10,7 @@ import google.generativeai as genai
 from config import GEMINI_API_KEY
 import json
 from typing import List
+import re
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -22,6 +23,21 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # Configure the Gemini API
 genai.configure(api_key=GEMINI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-pro')
+
+def format_scene_with_line_breaks(scene):
+    lines = scene.split('\n')
+    formatted_lines = []
+    
+    for line in lines:
+        match = re.match(r'^(\w+):(.*)', line.strip())
+        if match:
+            character = match.group(1).upper()
+            dialogue = match.group(2).strip()
+            formatted_lines.append(f"{character}\n{dialogue}\n")
+        else:
+            formatted_lines.append(line + "\n")
+    
+    return "".join(formatted_lines)
 
 @app.get("/", response_class=HTMLResponse)
 async def upload_form(request: Request):
@@ -47,18 +63,21 @@ async def upload_image(image: UploadFile = File(...)):
         image_url = f"/static/images/{image.filename}"
         
         # Generate a Seinfeld scene about the image using Gemini API
-        prompt = "Create a short Seinfeld scene (max 150 words) involving Jerry, George, Elaine, and Kramer that revolves around this image. Make sure to reference specific elements from the image in the scene."
+        prompt = "Create a short Seinfeld scene (max 150 words) involving Jerry, George, Elaine, and Kramer that revolves around this image. Make sure to reference specific elements from the image in the scene. Format the scene with character names in uppercase followed by a colon, and their dialogue on the next line."
         response = model.generate_content([prompt, pil_image])
         seinfeld_scene = response.text
         
+        # Format the scene with line breaks
+        formatted_scene = format_scene_with_line_breaks(seinfeld_scene)
+        
         logger.info(f"Image {image.filename} uploaded and Seinfeld scene generated successfully")
-        logger.info(f"Generated Seinfeld scene: {seinfeld_scene}")
+        logger.info(f"Generated Seinfeld scene: {formatted_scene}")
         
         return JSONResponse({
             "filename": image.filename,
             "format": pil_image.format,
             "size": f"{pil_image.size[0]}x{pil_image.size[1]}",
-            "seinfeld_scene": seinfeld_scene,
+            "seinfeld_scene": formatted_scene,
             "image_url": image_url
         })
     except Exception as e:
@@ -98,6 +117,7 @@ async def develop_scene(
         {scene_text}
 
         Continue the scene based on this user input: "{user_input}"
+        Format the scene with character names in uppercase followed by a colon, and their dialogue on the next line.
         """
         
         if images:
@@ -114,11 +134,14 @@ async def develop_scene(
         
         developed_scene = response.text
         
+        # Format the scene with line breaks
+        formatted_scene = format_scene_with_line_breaks(developed_scene)
+        
         logger.info(f"Scene developed successfully")
-        logger.info(f"Developed scene: {developed_scene}")
+        logger.info(f"Developed scene: {formatted_scene}")
         
         return JSONResponse({
-            "developed_scene": developed_scene,
+            "developed_scene": formatted_scene,
             "new_image_urls": new_image_urls
         })
     except Exception as e:
