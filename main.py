@@ -34,17 +34,17 @@ async def upload_image(image: UploadFile = File(...)):
         pil_image = Image.open(BytesIO(image_bytes))
         
         # Ensure the static directory exists
-        os.makedirs("static", exist_ok=True)
+        os.makedirs("static/images", exist_ok=True)
         
         # Save the image to the static directory
-        image_path = os.path.join("static", image.filename)
+        image_path = os.path.join("static/images", image.filename)
         pil_image.save(image_path)
         
         # Set correct permissions for the saved image
         os.chmod(image_path, 0o644)
         
         # Get the URL for the saved image
-        image_url = f"/static/{image.filename}"
+        image_url = f"/static/images/{image.filename}"
         
         # Generate a Seinfeld scene about the image using Gemini API
         prompt = "Create a short Seinfeld scene (max 150 words) involving Jerry, George, Elaine, and Kramer that revolves around this image. Make sure to reference specific elements from the image in the scene."
@@ -83,11 +83,11 @@ async def develop_scene(
                 pil_image = Image.open(BytesIO(image_bytes))
                 
                 # Save the image to the static directory
-                image_path = os.path.join("static", image.filename)
+                image_path = os.path.join("static/images", image.filename)
                 pil_image.save(image_path)
                 os.chmod(image_path, 0o644)
                 
-                new_image_urls.append(f"/static/{image.filename}")
+                new_image_urls.append(f"/static/images/{image.filename}")
                 image_contents.append(pil_image)
 
         # Prepare the prompt for scene development

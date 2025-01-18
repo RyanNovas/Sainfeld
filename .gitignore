@@ -3,3 +3,6 @@ static/*
 
 # But keep the .gitkeep file
 !static/.gitkeep
+
+__pycache__
+*.pyc
